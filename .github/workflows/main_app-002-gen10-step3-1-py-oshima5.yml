@@ -22,7 +22,7 @@ jobs:
       - name: Set up Python version
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.12'release.zip
 
       - name: Create and start virtual environment
         run: |
@@ -38,10 +38,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: python-app
-          path: |
-            .
-            !venv/
-
+          path: release.zip
+          
   deploy:
     runs-on: ubuntu-latest
     needs: build
@@ -58,4 +56,5 @@ jobs:
         with:
           app-name: 'app-002-gen10-step3-1-py-oshima5'
           slot-name: 'Production'
+
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_D9D622FE255C48DE91301AF245DE5CE4 }}
