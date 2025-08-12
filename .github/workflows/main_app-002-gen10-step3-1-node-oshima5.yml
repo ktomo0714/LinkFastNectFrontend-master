@@ -4,52 +4,64 @@
 name: Build and deploy Node.js app to Azure Web App - app-002-gen10-step3-1-node-oshima5
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+ push:
+   branches:
+     - main
+ workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read #This is required for actions/checkout
+ build:
+   runs-on: ubuntu-latest
+   permissions:
+     contents: read #This is required for actions/checkout
 
-    steps:
-      - uses: actions/checkout@v4
+   steps:
+     - uses: actions/checkout@v4
 
-      - name: Set up Node.js version
-        uses: actions/setup-node@v3
-        with:
-          node-version: '22.x'
+     - name: Set up Node.js version
+       uses: actions/setup-node@v3
+       with:
+         node-version: '22.x'
 
-      - name: npm install, build, and test
-        run: |
-          npm install
-          npm run build --if-present
-          npm run test --if-present
+     - name: npm install, build, and test
+       #1
+       env:
+         NEXT_PUBLIC_API_ENDPOINT: ${{ secrets.NEXT_PUBLIC_API_ENDPOINT }}
+       run: |
+         npm install
+         npm run build --if-present
+         npm run test --if-present
+       #2
+     - name: Copy artifact for deployment job
+       run: |
+         mkdir deploy
+         cp -r ./.next/standalone/. ./deploy
+         cp -r ./.next/static/. ./deploy/.next/static
 
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
-        with:
-          name: node-app
-          path: .
+     - name: Zip artifact for deployment
+       run: zip release.zip ./deploy -r #3    
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    
-    steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
-        with:
-          name: node-app
-      
-      - name: 'Deploy to Azure Web App'
-        id: deploy-to-webapp
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: 'app-002-gen10-step3-1-node-oshima5'
-          slot-name: 'Production'
-          package: .
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_0495DD7ECC464625BDDB1E2C2CA21605 }}
+     - name: Upload artifact for deployment job
+       uses: actions/upload-artifact@v4
+       with:
+         name: node-app
+         path: release.zip
+
+ deploy:
+   runs-on: ubuntu-latest
+   needs: build
+   
+   steps:
+     - name: Download artifact from build job
+       uses: actions/download-artifact@v4
+       with:
+         name: node-app
+     
+     - name: 'Deploy to Azure Web App'
+       id: deploy-to-webapp
+       uses: azure/webapps-deploy@v3
+       with:
+         app-name: 'app-002-gen10-step3-1-node-oshima5'
+         slot-name: 'Production'
+         package: release.zip #4
+         publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_0261921DE5F94E2F8069C9D3D1B98F2E }}
