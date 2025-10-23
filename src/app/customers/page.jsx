@@ -28,7 +28,7 @@ export default function Page() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {customerInfos.map((customerInfo, index) => (
             <div
-              key={index}
+              key={customerInfo.customer_id}
               className="card bordered bg-white border-blue-200 border-2 flex flex-row max-w-sm m-4"
             >
               <OneCustomerInfoCard {...customerInfo} />
