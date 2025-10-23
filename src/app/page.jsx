@@ -27,10 +27,15 @@ export default function POSPage() {
       
       if (response.ok) {
         const product = await response.json();
-        setCurrentProduct(product);
-        setMessage('');
+        if (product && product.prd_id) {
+          setCurrentProduct(product);
+          setMessage('');
+        } else {
+          setMessage('商品がマスタ未登録です');
+          setCurrentProduct(null);
+        }
       } else {
-        setMessage('商品が見つかりません');
+        setMessage('商品がマスタ未登録です');
         setCurrentProduct(null);
       }
     } catch (error) {
@@ -60,6 +65,7 @@ export default function POSPage() {
     }
 
     setMessage('商品を追加しました');
+    // 仕様書に従って、追加後に表示エリアをクリア
     setCurrentProduct(null);
     setProductCode('');
   };
@@ -114,10 +120,14 @@ export default function POSPage() {
       });
 
       if (response.ok) {
-        const total = calculateTotal();
+        const result = await response.json();
+        const total = result.total_amount || calculateTotal();
         const tax = Math.floor(total * 0.1);
         alert(`購入完了！\n小計: ${total}円\n消費税: ${tax}円\n合計: ${total + tax}円`);
+        // 仕様書に従って、購入後に表示エリアをクリア
         setCart([]);
+        setCurrentProduct(null);
+        setProductCode('');
         setMessage('購入が完了しました');
       } else {
         setMessage('購入処理に失敗しました');
@@ -131,17 +141,17 @@ export default function POSPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-8 pos-container">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-6 sm:mb-8 text-center">
-          🛒 POSシステム
+          Web画面POSアプリ
         </h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
           {/* 左側: 商品読み込みエリア */}
           <div className="space-y-6">
             {/* コード入力エリア */}
-            <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
+            <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 pos-card fade-in">
               <h2 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800">
                 ②コード入力エリア
               </h2>
@@ -154,14 +164,14 @@ export default function POSPage() {
                   onKeyPress={(e) => e.key === 'Enter' && handleReadProduct()}
                   placeholder="13桁の商品コード"
                   maxLength={13}
-                  className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-3 text-lg rounded-lg focus:outline-none pos-input"
                   disabled={loading}
                 />
                 
                 <button
                   onClick={handleReadProduct}
                   disabled={loading}
-                  className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-lg transition disabled:bg-gray-400"
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-lg disabled:bg-gray-400 pos-button"
                 >
                   {loading ? '読み込み中...' : '①読み込みボタン'}
                 </button>
@@ -179,44 +189,41 @@ export default function POSPage() {
             </div>
 
             {/* 商品表示エリア */}
-            {currentProduct && (
-              <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
-                <h2 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800">
-                  ③名称表示エリア / ④単価表示エリア
-                </h2>
-                
-                <div className="space-y-3">
-                  <div className="flex justify-between py-2 border-b">
-                    <span className="text-gray-600">商品名:</span>
-                    <span className="font-semibold">{currentProduct.name}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b">
-                    <span className="text-gray-600">商品コード:</span>
-                    <span className="font-mono text-sm">{currentProduct.code}</span>
-                  </div>
-                  <div className="flex justify-between py-2">
-                    <span className="text-gray-600">単価:</span>
-                    <span className="text-xl sm:text-2xl font-bold text-blue-600">
-                      {currentProduct.price}円
-                    </span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleAddToCart}
-                  disabled={loading}
-                  className="w-full mt-6 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-lg transition disabled:bg-gray-400"
-                >
-                  ⑤追加
-                </button>
+            <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 pos-card fade-in">
+              <h2 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800">
+                ③名称表示エリア
+              </h2>
+              
+              <div className="mb-6 p-4 border-2 border-gray-200 rounded-lg min-h-[60px] flex items-center">
+                <span className={`text-lg font-semibold ${message.includes('マスタ未登録') ? 'text-red-600' : ''}`}>
+                  {currentProduct ? currentProduct.name : (message.includes('マスタ未登録') ? '商品がマスタ未登録です' : '商品名が表示されます')}
+                </span>
               </div>
-            )}
+
+              <h2 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800">
+                ④単価表示エリア
+              </h2>
+              
+              <div className="mb-6 p-4 border-2 border-gray-200 rounded-lg min-h-[60px] flex items-center">
+                <span className={`text-xl font-bold ${currentProduct ? 'text-blue-600' : 'text-gray-400'}`}>
+                  {currentProduct ? `${currentProduct.price}円` : '単価が表示されます'}
+                </span>
+              </div>
+
+              <button
+                onClick={handleAddToCart}
+                disabled={loading || !currentProduct}
+                className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-lg disabled:bg-gray-400 pos-button"
+              >
+                ⑤購入リストへ追加ボタン
+              </button>
+            </div>
           </div>
 
           {/* 右側: 購入リストエリア */}
-          <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
+          <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 pos-card fade-in">
             <h2 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800">
-              ⑥購入品目リスト
+              購入リスト
             </h2>
 
             {cart.length === 0 ? (
@@ -232,13 +239,10 @@ export default function POSPage() {
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold truncate">{item.name}</div>
                         <div className="text-sm text-gray-600">
-                          {item.price}円 × {item.quantity}個
+                          x{item.quantity} {item.price}円 {item.price * item.quantity}円
                         </div>
                       </div>
                       <div className="flex items-center gap-3 sm:gap-4 ml-2">
-                        <div className="text-base sm:text-lg font-bold text-blue-600 whitespace-nowrap">
-                          {item.price * item.quantity}円
-                        </div>
                         <button
                           onClick={() => handleRemoveFromCart(index)}
                           className="text-red-500 hover:text-red-700 transition p-1"
@@ -268,9 +272,9 @@ export default function POSPage() {
                 <button
                   onClick={handlePurchase}
                   disabled={loading}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-lg transition disabled:bg-gray-400 text-base sm:text-lg"
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-lg disabled:bg-gray-400 text-base sm:text-lg pos-button"
                 >
-                  {loading ? '処理中...' : '⑦購入'}
+                  {loading ? '処理中...' : '⑦購入ボタン'}
                 </button>
               </div>
             )}
