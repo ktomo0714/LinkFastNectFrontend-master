@@ -1,3 +1,6 @@
+"use server";
+import { revalidatePath } from "next/cache";
+
 export default async function deleteCustomer(id) {
   const res = await fetch(
     process.env.NEXT_PUBLIC_API_ENDPOINT + `/customers?customer_id=${id}`,
@@ -8,4 +11,6 @@ export default async function deleteCustomer(id) {
   if (!res.ok) {
     throw new Error("Failed to delete customer");
   }
+
+  revalidatePath("/customers");
 }

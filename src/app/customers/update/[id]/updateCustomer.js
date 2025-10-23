@@ -1,3 +1,6 @@
+"use server";
+import { revalidatePath } from "next/cache";
+
 export default async function updateCustomer(formData) {
   const updated_customer_name = formData.get("customer_name");
   const updated_customer_id = formData.get("customer_id");
@@ -22,4 +25,6 @@ export default async function updateCustomer(formData) {
   if (!res.ok) {
     throw new Error("Failed to update customer");
   }
+
+  revalidatePath("/customers");
 }
