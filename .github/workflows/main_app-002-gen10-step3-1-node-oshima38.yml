@@ -33,10 +33,10 @@ jobs:
 
       - name: Create deployment package
         run: |
-          mkdir deploy
+          mkdir -p deploy/.next
           cp -r .next/standalone/* deploy/
           cp -r .next/static deploy/.next/static
-          cp -r public deploy/public
+          if [ -d "public" ]; then cp -r public deploy/public; fi
           cd deploy
           zip -r ../deploy.zip .
 
